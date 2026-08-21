@@ -21,28 +21,26 @@ AI 协作开发的完整工程规范与文档体系。面向个人开发者与 A
 | 10 | [部署与环境管理](10-部署与环境管理-mimo.md) | Docker/云/Serverless、CI/CD、配置分层、备份恢复 | 部署 |
 | 11 | [开发里程碑计划](11-开发里程碑计划-mimo.md) | 五步拆分法、六步开发循环、里程碑模板 | 规划 |
 | 12 | [健康检查清单](12-健康检查清单-mimo.md) | 10 个维度的检查清单（AI 交付/代码审查/验收/安全等） | 质量把关 |
-| 13 | 最佳实践案例（见 `examples/dogear/`） | 以 DogEar 书签工具为案例的全流程实战演示 | 案例参考 |
+| 14 | [最佳实践案例：DogEar](14-最佳实践案例-DogEar-mimo.md) | 以 DogEar 书签工具为案例的全流程实战演示 | 案例参考 |
 
 ## 范例项目
 
-每个项目在开发过程中需要产出的落地文档。[00-导读](00-导读与项目概述-mimo.md) 第六章列出了完整的交付物清单。
-
-以 DogEar·折耳书签为案例，展示了完整的项目交付文档：
+以 DogEar·折耳书签为案例，展示了完整的项目交付文档。[00-导读](00-导读与项目概述-mimo.md) 第六章列出了完整的交付物清单。
 
 ```
-examples/dogear/
-├── PROJECT_CONTEXT.md          # 项目上下文（AI 每次新对话看这个）
-├── 01-需求说明书.md            # 产品需求文档
-├── 02-最佳实践案例.md          # 全流程最佳实践
-├── CHANGELOG.md                # 变更日志
-└── docs/
-    ├── DESIGN.md               # 技术设计文档
-    ├── API.md                  # API 接口清单
-    ├── DATA_MODEL.md           # 数据库设计
-    ├── COMPONENTS.md           # 组件注册表
-    ├── MILESTONES.md           # 里程碑计划
-    ├── DEPLOY.md               # 部署指南
-    └── HEALTH_CHECK.md         # 健康检查记录
+examples/
+└── dogear/                     # DogEar·折耳书签
+    ├── PROJECT_CONTEXT.md      # 项目上下文（AI 每次新对话看这个）
+    ├── 01-需求说明书.md        # 产品需求文档
+    ├── CHANGELOG.md            # 变更日志
+    └── docs/
+        ├── DESIGN.md           # 技术设计文档
+        ├── API.md              # API 接口清单
+        ├── DATA_MODEL.md       # 数据库设计
+        ├── COMPONENTS.md       # 组件注册表
+        ├── MILESTONES.md       # 里程碑计划
+        ├── DEPLOY.md           # 部署指南
+        └── HEALTH_CHECK.md     # 健康检查记录
 ```
 
 ## 快速开始
