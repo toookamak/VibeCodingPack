@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VibeCoding Pack - AI协作开发知识库</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --bg-card: #1e2a4a;
+  --bg-hover: #253561;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0b8;
+  --text-muted: #6c6c8a;
+  --accent: #4361ee;
+  --accent-light: #5a7bff;
+  --highlight: #00d4ff;
+  --highlight-dim: rgba(0,212,255,0.15);
+  --border: #2a2a4a;
+  --border-light: #3a3a5a;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --danger: #e74c3c;
+  --code-bg: #0d1b2a;
+  --sidebar-width: 280px;
+  --toolbar-height: 56px;
+  --radius: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+html[data-theme="light"] {
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8ecf1;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f2f5;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted: #8a8aaa;
+  --accent: #4361ee;
+  --accent-light: #5a7bff;
+  --highlight: #0099cc;
+  --highlight-dim: rgba(0,153,204,0.1);
+  --border: #d8dce6;
+  --border-light: #c0c4cc;
+  --code-bg: #f0f2f5;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  overflow: hidden;
+  height: 100vh;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Progress Bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px; z-index: 1000;
+  background: linear-gradient(90deg, var(--accent), var(--highlight));
+  transition: width 0.15s ease;
+  width: 0%;
+}
+
+/* Toolbar */
+.toolbar {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--toolbar-height);
+  background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; z-index: 100;
+  gap: 12px;
+}
+.toolbar-logo {
+  font-size: 18px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--highlight));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+.toolbar-logo span { font-size: 12px; font-weight: 400; opacity: 0.7; margin-left: 8px; -webkit-text-fill-color: var(--text-muted); }
+.search-box {
+  flex: 1; max-width: 480px; position: relative; margin: 0 auto;
+}
+.search-box input {
+  width: 100%; padding: 8px 16px 8px 36px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg-primary);
+  color: var(--text-primary); font-size: 14px; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box input:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(67,97,238,0.2);
+}
+.search-box::before {
+  content: '🔍'; position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%); font-size: 14px;
+}
+.search-results {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  max-height: 400px; overflow-y: auto; display: none; z-index: 200;
+}
+.search-results.active { display: block; }
+.search-result-item {
+  padding: 10px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.search-result-item:hover { background: var(--bg-hover); }
+.search-result-item:last-child { border-bottom: none; }
+.search-result-title { font-size: 14px; font-weight: 600; color: var(--accent-light); }
+.search-result-snippet { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.search-result-snippet mark { background: var(--highlight-dim); color: var(--highlight); padding: 0 2px; border-radius: 2px; }
+.toolbar-actions { display: flex; gap: 8px; align-items: center; }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--bg-primary); color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: all 0.2s;
+}
+.btn-icon:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent); }
+.btn-icon.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Layout */
+.layout {
+  display: flex; margin-top: var(--toolbar-height); height: calc(100vh - var(--toolbar-height));
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width); min-width: var(--sidebar-width);
+  background: var(--bg-secondary); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: transform 0.3s ease, min-width 0.3s ease, width 0.3s ease;
+}
+.sidebar.collapsed { min-width: 0; width: 0; transform: translateX(-100%); }
+.sidebar-tabs {
+  display: flex; flex-wrap: wrap; gap: 4px; padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-tab {
+  padding: 5px 10px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; background: transparent; color: var(--text-muted);
+  border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
+}
+.sidebar-tab:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.sidebar-tab.active {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.sidebar-content {
+  flex: 1; overflow-y: auto; padding: 8px;
+}
+.nav-item {
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 14px; color: var(--text-secondary);
+  transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav-item.active { background: var(--highlight-dim); color: var(--highlight); font-weight: 600; }
+.nav-item .nav-icon { font-size: 14px; width: 20px; text-align: center; }
+.nav-group-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  color: var(--text-muted); padding: 12px 12px 4px; letter-spacing: 0.5px;
+}
+.nav-divider { height: 1px; background: var(--border); margin: 8px 12px; }
+
+/* Mobile sidebar toggle */
+.sidebar-toggle {
+  display: none; position: fixed; bottom: 20px; left: 20px; z-index: 150;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 20px; cursor: pointer; box-shadow: var(--shadow);
+  align-items: center; justify-content: center;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1; overflow-y: auto; padding: 32px 40px 80px;
+  scroll-behavior: smooth;
+}
+.doc-section { display: none; max-width: 900px; margin: 0 auto; }
+.doc-section.active { display: block; }
+.doc-section h1 {
+  font-size: 28px; font-weight: 700; margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.doc-section h2 {
+  font-size: 22px; font-weight: 700; margin: 32px 0 12px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--accent);
+  color: var(--text-primary);
+}
+.doc-section h3 {
+  font-size: 18px; font-weight: 600; margin: 24px 0 8px;
+  color: var(--accent-light);
+}
+.doc-section h4 { font-size: 16px; font-weight: 600; margin: 16px 0 6px; color: var(--text-primary); }
+.doc-section p { margin: 8px 0; color: var(--text-secondary); }
+.doc-section ul, .doc-section ol { margin: 8px 0 8px 24px; color: var(--text-secondary); }
+.doc-section li { margin: 4px 0; }
+.doc-section li::marker { color: var(--accent); }
+.doc-section strong { color: var(--text-primary); }
+.doc-section a { color: var(--highlight); text-decoration: none; }
+.doc-section a:hover { text-decoration: underline; }
+.doc-section blockquote {
+  border-left: 3px solid var(--accent); padding: 12px 16px;
+  background: var(--bg-card); border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 12px 0; color: var(--text-secondary);
+}
+.doc-section code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+  font-size: 0.9em; color: var(--highlight);
+}
+.doc-section pre {
+  background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin: 12px 0;
+  overflow-x: auto; position: relative;
+}
+.doc-section pre code { background: none; padding: 0; color: var(--text-primary); font-size: 13px; line-height: 1.5; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px; padding: 4px 10px;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-muted); cursor: pointer;
+  font-size: 12px; transition: all 0.2s; opacity: 0;
+}
+.doc-section pre:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.doc-section table {
+  width: 100%; border-collapse: collapse; margin: 12px 0;
+  font-size: 14px;
+}
+.doc-section th {
+  background: var(--bg-tertiary); color: var(--text-primary);
+  padding: 10px 12px; text-align: left; font-weight: 600;
+  border: 1px solid var(--border);
+}
+.doc-section td {
+  padding: 8px 12px; border: 1px solid var(--border); color: var(--text-secondary);
+}
+.doc-section tr:nth-child(even) td { background: var(--bg-card); }
+.doc-section tr:hover td { background: var(--bg-hover); }
+.doc-section hr {
+  border: none; height: 1px; background: var(--border);
+  margin: 24px 0;
+}
+.doc-meta {
+  display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.doc-meta-tag {
+  padding: 4px 10px; border-radius: 12px; font-size: 12px;
+  background: var(--highlight-dim); color: var(--highlight);
+  border: 1px solid rgba(0,212,255,0.3);
+}
+
+/* Dimension-specific styles */
+.dimension-header {
+  padding: 20px 0 16px; border-bottom: 2px solid var(--accent);
+  margin-bottom: 24px;
+}
+.dimension-header h1 {
+  font-size: 26px; margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--highlight));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.dimension-header p { color: var(--text-muted); font-size: 14px; }
+
+/* Flow Axis */
+.flow-timeline {
+  position: relative; padding-left: 32px; margin: 16px 0;
+}
+.flow-timeline::before {
+  content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+  width: 2px; background: linear-gradient(180deg, var(--accent), var(--highlight));
+}
+.flow-step {
+  position: relative; margin-bottom: 24px; padding: 16px 20px;
+  background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s;
+}
+.flow-step:hover { border-color: var(--accent); transform: translateX(4px); }
+.flow-step::before {
+  content: ''; position: absolute; left: -27px; top: 20px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg-primary);
+}
+.flow-step-title { font-weight: 700; font-size: 16px; color: var(--text-primary); margin-bottom: 4px; }
+.flow-step-desc { font-size: 13px; color: var(--text-muted); }
+.flow-step-docs { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.flow-step-doc-tag {
+  padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  background: var(--highlight-dim); color: var(--highlight);
+}
+
+/* Knowledge Graph */
+.kg-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px; margin: 16px 0;
+}
+.kg-card {
+  padding: 20px; background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); transition: all 0.2s; cursor: pointer;
+}
+.kg-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.kg-card-icon { font-size: 28px; margin-bottom: 8px; }
+.kg-card-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.kg-card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.kg-card-tags { margin-top: 10px; display: flex; gap: 4px; flex-wrap: wrap; }
+.kg-tag {
+  padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  background: var(--bg-hover); color: var(--text-secondary);
+}
+
+/* Role Perspective */
+.role-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.role-tab {
+  padding: 8px 16px; border-radius: 20px; cursor: pointer;
+  background: var(--bg-card); color: var(--text-secondary);
+  border: 1px solid var(--border); font-size: 14px; transition: all 0.2s;
+}
+.role-tab:hover { border-color: var(--accent); }
+.role-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.role-content { display: none; }
+.role-content.active { display: block; }
+.role-section { margin-bottom: 20px; }
+.role-section h3 { color: var(--highlight); font-size: 16px; margin-bottom: 8px; }
+.role-list { list-style: none; padding: 0; }
+.role-list li {
+  padding: 8px 12px; margin: 4px 0; background: var(--bg-card);
+  border-radius: 6px; border-left: 3px solid var(--accent);
+  font-size: 14px; color: var(--text-secondary);
+}
+
+/* Problem Oriented */
+.problem-list { margin: 16px 0; }
+.problem-item {
+  padding: 16px 20px; background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.problem-item:hover { border-color: var(--accent); }
+.problem-q { font-weight: 700; font-size: 15px; color: var(--text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.problem-q::before { content: '❓'; }
+.problem-a { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+.problem-item.open .problem-a { display: block; }
+.problem-item.open { border-color: var(--accent); }
+
+/* Decision Tree */
+.decision-tree { margin: 16px 0; }
+.decision-node {
+  padding: 14px 18px; background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); margin-bottom: 8px;
+}
+.decision-q { font-weight: 600; color: var(--highlight); margin-bottom: 8px; font-size: 14px; }
+.decision-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.decision-opt {
+  padding: 6px 14px; border-radius: 16px; font-size: 13px;
+  background: var(--bg-hover); color: var(--text-secondary);
+  border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+}
+.decision-opt:hover, .decision-opt.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+.decision-result {
+  display: none; margin-top: 10px; padding: 12px 16px;
+  background: var(--highlight-dim); border-radius: 6px;
+  font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+  border-left: 3px solid var(--highlight);
+}
+.decision-result.show { display: block; }
+
+/* Checklist */
+.checklist-group { margin: 16px 0; }
+.checklist-title {
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.checklist-title::before { content: '📋'; }
+.checklist-items { padding: 8px 0; }
+.checklist-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 0; font-size: 14px; color: var(--text-secondary);
+}
+.checklist-item input[type="checkbox"] {
+  margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px;
+  cursor: pointer;
+}
+.checklist-item label { cursor: pointer; }
+.checklist-item input:checked + label { text-decoration: line-through; color: var(--text-muted); }
+.checklist-progress {
+  font-size: 12px; color: var(--text-muted); margin-left: auto;
+}
+
+/* Quick Reference */
+.qr-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; margin: 16px 0;
+}
+.qr-card {
+  padding: 16px; background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.qr-card-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--accent-light); }
+.qr-card-content { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.qr-card-content code {
+  background: var(--code-bg); padding: 1px 5px; border-radius: 3px;
+  font-size: 12px; color: var(--highlight);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+}
+.breadcrumb a { color: var(--accent); text-decoration: none; cursor: pointer; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { position: fixed; top: var(--toolbar-height); left: 0; bottom: 0; z-index: 90; box-shadow: var(--shadow); }
+  .sidebar.collapsed { transform: translateX(-100%); }
+  .sidebar-toggle { display: flex; }
+  .main-content { padding: 20px 16px 80px; }
+  .search-box { max-width: 200px; }
+  .toolbar-logo span { display: none; }
+  .kg-grid { grid-template-columns: 1fr; }
+  .qr-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .toolbar { padding: 0 12px; }
+  .search-box { max-width: 140px; }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.doc-section.active { animation: fadeIn 0.25s ease; }
+.highlight-match { background: var(--highlight-dim); border-radius: 2px; padding: 0 2px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-logo">VibeCoding Pack<span>AI协作开发知识库</span></div>
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="搜索文档内容..." />
+    <div class="search-results" id="search-results"></div>
+  </div>
+  <div class="toolbar-actions">
+    <button class="btn-icon" id="btn-sidebar" title="切换侧栏">☰</button>
+    <button class="btn-icon" id="btn-theme" title="切换主题">🌙</button>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-tabs" id="sidebar-tabs"></div>
+    <div class="sidebar-content" id="sidebar-nav"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="main-content"></div>
+</div>
+
+<button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+
+<script id="docs-data" type="application/json">
+{
+  "00": {
+    "title": "导读与项目概述",
+    "category": "索引",
+    "tags": ["概览", "快速开始", "项目规范"],
+    "content": "## 文档体系概述\n\nVibeCoding Pack 是一套完整的 AI 协作开发知识库，包含 **15 篇文档**，涵盖从需求分析到部署运维的全流程。\n\n### 文档分类\n\n| 类型 | 文档 | 说明 |\n|------|------|------|\n| **规则类** | 01开发规范、02数据库设计、03-API设计、04-组件设计、08-安全设计 | 定义必须遵守的规范 |\n| **流程类** | 06-AI协作指南、11-里程碑计划 | 定义标准工作流程 |\n| **清单类** | 12-健康检查清单 | 提供可执行的检查项 |\n| **索引类** | 00-导读、05-UX指南、07-测试质量、09-性能缓存、10-部署管理、13-需求分析、14-最佳实践 | 参考与案例 |\n\n### 10 条核心规范摘要\n\n1. **可维护性优先** — 代码的首要目标是可读可维护\n2. **单一职责** — 一个模块/函数/组件只做一件事\n3. **关注点分离** — UI、逻辑、数据严格分离\n4. **显式优于隐式** — 类型、接口、错误处理必须显式声明\n5. **渐进式复杂度** — 从最简单方案开始，按需增加复杂度\n6. **一致性** — 遵循项目已有模式和命名规范\n7. **测试覆盖** — 核心逻辑必须有测试\n8. **安全默认** — 默认拒绝，显式放行\n9. **渐进式披露** — 复杂功能分层展示\n10. **可观测性** — 关键操作必须有日志\n\n### 技术栈速查\n\n| 层次 | 技术选型 |\n|------|----------|\n| 前端 | React + TypeScript + Tailwind CSS |\n| 后端 | Node.js + Express/Fastify |\n| 数据库 | PostgreSQL + Redis |\n| 部署 | Docker + CI/CD |\n| 测试 | Vitest + Testing Library |\n\n### 项目交付物清单\n\n- 完整的源代码（含类型注解）\n- 数据库迁移脚本\n- API 文档\n- 测试用例\n- 部署配置\n- README 文档"
+  },
+  "01": {
+    "title": "开发规范与工程原则",
+    "category": "规则",
+    "tags": ["工程原则", "代码规范", "版本管理"],
+    "content": "## 六大工程原则\n\n### 1. 可维护性优先\n代码的首要目标是可读可维护，而非炫技。写代码时要考虑：\n- 三个月后能否快速理解\n- 其他人能否接手维护\n- 修改一处不会引发连锁反应\n\n### 2. 单一职责\n一个模块、函数、组件只做一件事。如果一个函数超过 30 行，考虑拆分。\n\n### 3. 关注点分离\nUI、业务逻辑、数据访问严格分离。React 组件中不要直接写 SQL 或 HTTP 请求。\n\n### 4. 显式优于隐式\n- 类型定义必须显式声明\n- 接口契约必须明确\n- 错误处理不能靠默认行为\n\n### 5. 渐进式复杂度\n从最简单的方案开始，只在有明确需求时增加复杂度。不要提前构建「可能需要」的功能。\n\n### 6. 一致性\n遵循项目已有的模式和命名规范。新代码的风格应与现有代码保持一致。\n\n---\n\n## 项目架构\n\n### 按功能模块组织\n\n```\nsrc/\n├── modules/\n│   ├── auth/          # 认证模块\n│   │   ├── components/\n│   │   ├── hooks/\n│   │   ├── services/\n│   │   ├── types/\n│   │   └── index.ts\n│   ├── dashboard/     # 仪表盘模块\n│   └── settings/      # 设置模块\n├── shared/           # 共享代码\n│   ├── components/\n│   ├── hooks/\n│   ├── utils/\n│   └── types/\n└── app.tsx\n```\n\n### 四层架构\n\n1. **表示层** — 组件、页面、样式\n2. **业务逻辑层** — Hooks、Services\n3. **数据访问层** — API 调用、数据转换\n4. **基础设施层** — 配置、工具函数、类型定义\n\n---\n\n## 代码规范\n\n### 文件大小限制\n- 单个文件不超过 **300 行**\n- 单个函数不超过 **50 行**\n- 超过限制时必须拆分\n\n### 命名规范\n\n| 类型 | 规范 | 示例 |\n|------|------|------|\n| 文件 | kebab-case | `user-profile.tsx` |\n| 组件 | PascalCase | `UserProfile` |\n| 函数 | camelCase | `getUserById` |\n| 常量 | UPPER_SNAKE | `MAX_RETRY_COUNT` |\n| 类型 | PascalCase | `UserProfile` |\n| CSS 类 | BEM 风格 | `card__title--active` |\n\n### 类型系统\n- 禁止使用 `any`\n- 优先使用 `interface` 而非 `type`\n- 导出的类型必须有 JSDoc 注释\n\n### 注释规范\n- 复杂逻辑必须有注释说明「为什么」\n- 简单代码不需要注释「做了什么」\n- TODO 注释必须标注负责人和日期\n\n---\n\n## 依赖管理\n\n### 原则\n1. **最小依赖** — 只引入确实需要的包\n2. **审查来源** — 优先选择活跃维护的包\n3. **锁定版本** — 使用 lock 文件锁定版本\n4. **定期更新** — 每月检查依赖更新\n\n### 禁止事项\n- 禁止安装功能重叠的包\n- 禁止使用已废弃的包\n- 禁止在运行时依赖开发依赖\n\n---\n\n## 重构方法论\n\n### 信号识别\n需要重构的信号：\n- 修改一处需要同时修改多处\n- 函数参数超过 3 个\n- 代码重复超过 3 次\n- 理解代码需要超过 5 分钟\n\n### 方案模板\n1. 明确重构目标\n2. 识别影响范围\n3. 制定分步计划\n4. 每步都保持可运行\n5. 逐步验证\n\n### 约束规则\n- 重构期间不添加新功能\n- 每次重构后必须通过所有测试\n- 重构必须在独立分支进行\n\n---\n\n## 版本管理\n\n### Git 分支策略\n```\nmain          — 生产环境\n├── develop   — 开发主线\n│   ├── feature/xxx  — 功能分支\n│   ├── fix/xxx      — 修复分支\n│   └── refactor/xxx — 重构分支\n```\n\n### Conventional Commits\n```\nfeat: 添加用户登录功能\nfix: 修复密码验证错误\nrefactor: 重构认证模块\ndocs: 更新 API 文档\ntest: 添加单元测试\nchore: 更新依赖\n```\n\n### Semver 版本号\n- **MAJOR** — 不兼容的 API 变更\n- **MINOR** — 向后兼容的功能新增\n- **PATCH** — 向后兼容的 bug 修复"
+  },
+  "02": {
+    "title": "数据库设计与数据模型",
+    "category": "规则",
+    "tags": ["数据库", "Schema", "索引", "迁移"],
+    "content": "## 实体识别方法\n\n### 名词 → 实体\n分析需求中的名词，识别潜在实体：\n- 用户（User）\n- 文章（Article）\n- 评论（Comment）\n- 标签（Tag）\n\n### 动词 → 关系\n分析需求中的动词，识别实体关系：\n- 用户「发布」文章 → 一对多\n- 文章「拥有」标签 → 多对多\n- 用户「点赞」评论 → 多对多\n\n---\n\n## 字段设计\n\n### 必备字段\n\n```sql\nCREATE TABLE example (\n  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  deleted_at TIMESTAMPTZ,  -- 软删除\n  -- 业务字段...\n);\n```\n\n### 主键选择\n| 方案 | 优点 | 缺点 |\n|------|------|------|\n| UUID | 无冲突、可离线生成 | 索引效率略低 |\n| SERIAL | 索引效率高 | 需要中心分配 |\n| ULID | 时间有序+UUID优势 | 实现复杂 |\n\n### 时间字段\n- 所有表必须有 `created_at` 和 `updated_at`\n- 使用 `TIMESTAMPTZ` 类型\n- `updated_at` 通过触发器自动更新\n\n### 软删除\n- 使用 `deleted_at` 字段实现软删除\n- 查询时默认过滤 `deleted_at IS NULL`\n- 创建唯一索引时需要包含 `deleted_at`\n\n### 字段类型选择\n| 场景 | 推荐类型 |\n|------|----------|\n| 主键 | UUID |\n| 金额 | DECIMAL(10,2) |\n| 状态 | ENUM 或小整数 |\n| 文本 | VARCHAR(n) |\n| 长文本 | TEXT |\n| JSON 数据 | JSONB |\n| 布尔 | BOOLEAN |\n\n---\n\n## 索引设计\n\n### 何时建索引\n- 频繁用于 WHERE 条件的字段\n- 频繁用于 JOIN 的字段\n- 频繁用于 ORDER BY 的字段\n- 高选择性字段（区分度高）\n\n### 复合索引最左前缀\n```sql\n-- 查询条件: user_id AND status AND created_at\nCREATE INDEX idx_orders_user_status_created\n  ON orders (user_id, status, created_at);\n\n-- 可以命中索引的查询:\n-- WHERE user_id = ?\n-- WHERE user_id = ? AND status = ?\n-- WHERE user_id = ? AND status = ? AND created_at > ?\n-- 不能命中: WHERE status = ? (跳过了最左列)\n```\n\n### 索引设计原则\n1. 单个索引不超过 3 个字段\n2. 高频查询的字段放前面\n3. 定期审查未使用的索引\n4. 避免过度索引影响写入性能\n\n---\n\n## 扩展方法\n\n### 新增字段\n```sql\nALTER TABLE users ADD COLUMN phone VARCHAR(20);\n-- 注意: 不要给 NOT NULL 默认值字段加 DEFAULT\n```\n\n### 修改字段类型\n```sql\n-- 创建新列 → 复制数据 → 删除旧列\nALTER TABLE users ADD COLUMN name_new VARCHAR(200);\nUPDATE users SET name_new = name;\nALTER TABLE users DROP COLUMN name;\nALTER TABLE users RENAME COLUMN name_new TO name;\n```\n\n### 拆分大表\n1. 创建新表结构\n2. 写迁移脚本复制数据\n3. 更新应用代码\n4. 删除旧表\n\n---\n\n## Schema 迁移\n\n### 迁移脚本规范\n```\nmigrations/\n├── 001_create_users.sql\n├── 002_create_posts.sql\n└── 003_add_user_avatar.sql\n```\n\n### 版本管理\n- 每个迁移脚本必须有唯一版本号\n- 迁移脚本必须是幂等的（可重复执行）\n- 每个迁移脚本必须有对应的回滚脚本\n\n### 回滚方案\n```sql\n-- migrate: up\nALTER TABLE users ADD COLUMN avatar_url TEXT;\n\n-- migrate: down\nALTER TABLE users DROP COLUMN avatar_url;\n```"
+   },
+  "03": {
+    "title": "API与接口设计",
+    "category": "规则",
+    "tags": ["RESTful", "API设计", "错误处理", "兼容性"],
+    "content": "## RESTful API 规范\n\n### URL 设计\n```\nGET    /api/users          # 获取用户列表\nGET    /api/users/:id      # 获取单个用户\nPOST   /api/users          # 创建用户\nPUT    /api/users/:id      # 更新用户\nDELETE /api/users/:id      # 删除用户\n```\n\n### URL 命名规则\n- 使用名词复数：`/users` 而非 `/user`\n- 使用连字符分隔：`/user-profiles` 而非 `/userProfiles`\n- 层级关系用嵌套：`/users/:id/posts`\n- 避免超过 3 层嵌套\n\n### HTTP 方法\n\n| 方法 | 用途 | 幂等 | 安全 |\n|------|------|------|------|\n| GET | 查询资源 | ✅ | ✅ |\n| POST | 创建资源 | ❌ | ❌ |\n| PUT | 全量更新 | ✅ | ❌ |\n| PATCH | 部分更新 | ❌ | ❌ |\n| DELETE | 删除资源 | ✅ | ❌ |\n\n### 查询参数\n```\nGET /api/posts?page=1&limit=20&sort=-created_at&fields=title,summary\n```\n- 分页：`page` + `limit`\n- 排序：`sort`（`-` 前缀表示降序）\n- 字段筛选：`fields`\n- 筛选：`filter[field]=value`\n\n### 标准响应结构\n```json\n{\n  \"success\": true,\n  \"data\": { },\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 100\n  }\n}\n```\n\n---\n\n## 内部接口设计\n\n### 标准 CRUD\n```typescript\n// Service 接口\ninterface UserService {\n  findById(id: string): Promise<User | null>;\n  findAll(query: UserQuery): Promise<PaginatedResult<User>>;\n  create(input: CreateUserInput): Promise<User>;\n  update(id: string, input: UpdateUserInput): Promise<User>;\n  delete(id: string): Promise<void>;\n}\n```\n\n### Input 类型设计\n```typescript\n// 创建输入（必填字段）\ninterface CreateUserInput {\n  email: string;\n  name: string;\n  password: string;\n}\n\n// 更新输入（全部可选）\ninterface UpdateUserInput {\n  email?: string;\n  name?: string;\n  avatar?: string;\n}\n```\n\n### 命名规范\n| 场景 | 命名 | 示例 |\n|------|------|------|\n| 获取单个 | findById | findById('123') |\n| 获取列表 | findAll | findAll({ page: 1 }) |\n| 创建 | create | create({ name: 'A' }) |\n| 更新 | update | update('123', { name: 'B' }) |\n| 删除 | delete | delete('123') |\n\n---\n\n## 错误处理\n\n### 自定义错误类型\n```typescript\nclass AppError extends Error {\n  constructor(\n    public code: string,\n    public message: string,\n    public statusCode: number = 500,\n    public details?: unknown\n  ) {\n    super(message);\n  }\n}\n\n// 使用\nthrow new AppError('USER_NOT_FOUND', '用户不存在', 404);\nthrow new AppError('VALIDATION_ERROR', '邮箱格式无效', 400, { field: 'email' });\n```\n\n### 三层处理模型\n1. **函数层** — 捕获业务异常，转换为标准错误\n2. **中间件层** — 统一处理所有错误，格式化响应\n3. **全局层** — 捕获未预期错误，记录日志\n\n### 错误响应格式\n```json\n{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"USER_NOT_FOUND\",\n    \"message\": \"用户不存在\",\n    \"details\": { \"userId\": \"123\" }\n  }\n}\n```\n\n---\n\n## 兼容性设计\n\n### 向前兼容\n- 新增字段不影响旧客户端\n- 新增端点不影响旧端点\n- 返回更多字段不影响旧解析\n\n### 版本控制策略\n```\n# 方案一: URL 版本\n/api/v1/users\n/api/v2/users\n\n# 方案二: Header 版本\nAccept: application/vnd.api.v1+json\n```\n\n### 废弃流程\n1. 标记为 deprecated（文档+响应头）\n2. 保留至少 2 个版本周期\n3. 提供迁移指南\n4. 最终移除"
+  },
+  "04": {
+    "title": "组件设计规范",
+    "category": "规则",
+    "tags": ["原子设计", "组件API", "复用", "React"],
+    "content": "## 原子设计方法论\n\n### 五层组件结构\n\n```\n1. Atoms（原子）     → 基础不可再分的元素\n2. Molecules（分子） → 原子组合\n3. Organisms（有机体）→ 分子组合\n4. Templates（模板）  → 页面骨架\n5. Pages（页面）      → 模板 + 数据\n```\n\n### 各层职责\n\n| 层次 | 示例 | 特点 |\n|------|------|------|\n| 原子 | Button, Input, Icon, Badge | 无业务逻辑 |\n| 分子 | SearchBar, FormField, MenuItem | 简单组合 |\n| 有机体 | Header, Sidebar, DataTable | 包含业务逻辑 |\n| 模板 | PageLayout, DashboardLayout | 定义页面结构 |\n| 页面 | HomePage, SettingsPage | 数据驱动 |\n\n---\n\n## 拆分与复用\n\n### 五步检查流程\n1. 这个组件是否只做一件事？\n2. 是否有重复的 UI 模式？\n3. 是否可以在其他地方复用？\n4. 是否有独立的状态逻辑？\n5. 是否超过 200 行？\n\n### 拆分信号\n- 组件渲染超过 100 行 JSX\n- 有 3 个以上独立的 useEffect\n- props 超过 8 个\n- 需要在多处使用其中一部分\n\n### 复用策略\n```\n组件复用优先级:\n1. 组合现有组件 (Composition)\n2. 提取自定义 Hook (Logic)\n3. 创建新组件 (Component)\n4. 使用 render props / children\n```\n\n---\n\n## 组件 API 设计\n\n### Props 数量原则\n- 理想: 3-5 个 props\n- 可接受: 6-8 个 props\n- 需要重构: 9+ 个 props\n\n### variant 模式\n```typescript\ninterface ButtonProps {\n  variant: 'primary' | 'secondary' | 'ghost' | 'danger';\n  size: 'sm' | 'md' | 'lg';\n  children: React.ReactNode;\n  onClick?: () => void;\n  disabled?: boolean;\n  loading?: boolean;\n}\n```\n\n### Children vs Slot\n```typescript\n// Children 模式 - 简单组合\n<Card>\n  <CardHeader>Title</CardHeader>\n  <CardContent>Content</CardContent>\n</Card>\n\n// Slot 模式 - 灵活注入\n<DataTable\n  header={<CustomHeader />}\n  row={(item) => <CustomRow item={item} />}\n  empty={<EmptyState />}\n/>\n```\n\n### 组件文档模板\n```typescript\n/**\n * 用户头像组件\n * @description 显示用户头像，支持图片和首字母 fallback\n * @example\n * <UserAvatar user={user} size=\"md\" />\n */\n```\n\n---\n\n## 组件注册表\n\n### 注册表结构\n```typescript\n// components/registry.ts\nexport const componentRegistry = {\n  atoms: {\n    Button,\n    Input,\n    Badge,\n    Avatar,\n  },\n  molecules: {\n    SearchBar,\n    FormField,\n    Card,\n  },\n  organisms: {\n    Header,\n    DataTable,\n    Modal,\n  },\n};\n```\n\n### 使用规范\n1. 新组件必须注册到注册表\n2. 通过注册表引用组件\n3. 保持注册表与文件系统同步"
+  },
+  "05": {
+    "title": "用户体验设计指南",
+    "category": "索引",
+    "tags": ["UX设计", "信息架构", "状态设计", "交互"],
+    "content": "## 信息架构\n\n### 三层页面模型\n\n```\n1. 导航层 — 全局导航、面包屑\n2. 内容层 — 主要信息和操作\n3. 辅助层 — 提示、帮助、设置\n```\n\n### 导航结构\n\n| 类型 | 适用场景 | 特点 |\n|------|----------|------|\n| 顶部导航 | 5-7 个一级页面 | 全局可见 |\n| 侧边栏 | 10+ 页面 | 可折叠 |\n| 标签页 | 同级内容切换 | 保持上下文 |\n| 面包屑 | 深层嵌套 | 显示路径 |\n\n### MECE 原则\n- **M**utually **E**xclusive — 分类互不重叠\n- **C**ollectively **E**xhaustive — 分类覆盖全部\n\n---\n\n## 五种核心状态设计\n\n### 1. 加载状态 (Loading)\n```typescript\n// 骨架屏优于 Spinner\n<Skeleton lines={5} />\n// 首次加载用骨架屏\n// 局部更新用小 Spinner\n```\n\n### 2. 空状态 (Empty)\n```typescript\n<EmptyState\n  icon=\"📄\"\n  title=\"暂无数据\"\n  description=\"还没有创建任何内容\"\n  action={{ label: '创建第一个', onClick: handleCreate }}\n/>\n```\n\n### 3. 错误状态 (Error)\n```typescript\n<ErrorState\n  message=\"加载失败\"\n  description=\"请检查网络连接后重试\"\n  retry={{ label: '重试', onClick: handleRetry }}\n/>\n```\n\n### 4. 成功状态 (Success)\n- 操作后给出明确反馈\n- Toast 提示（3秒自动消失）\n- 重要操作用 Modal 确认\n\n### 5. 禁用状态 (Disabled)\n- 视觉上明确区分\n- 保留占位空间\n- 提供禁用原因提示\n\n---\n\n## 操作反馈\n\n### 四层级反馈\n\n| 层级 | 方式 | 场景 |\n|------|------|------|\n| 1. 即时 | 按钮状态变化 | 点击瞬间 |\n| 2. 短暂 | Toast 提示 | 操作完成 |\n| 3. 持续 | 状态指示器 | 长时间操作 |\n| 4. 确认 | Modal/页面 | 重要变更 |\n\n### 乐观更新\n```typescript\n// 先更新 UI，再发送请求\nconst handleLike = async (postId: string) => {\n  // 1. 立即更新 UI\n  setPosts(prev => prev.map(p => \n    p.id === postId ? { ...p, liked: true, likes: p.likes + 1 } : p\n  ));\n  // 2. 发送请求\n  try {\n    await api.likePost(postId);\n  } catch (error) {\n    // 3. 失败时回滚\n    setPosts(prev => prev.map(p => \n      p.id === postId ? { ...p, liked: false, likes: p.likes - 1 } : p\n    ));\n    toast.error('操作失败');\n  }\n};\n```\n\n---\n\n## 容错与可发现性\n\n### 渐进式披露\n```\nLevel 1: 核心功能（默认展示）\nLevel 2: 常用功能（一级折叠）\nLevel 3: 高级功能（二级折叠/设置页）\nLevel 4: 专家功能（开发者工具）\n```\n\n### 可撤销操作\n- 删除操作提供「撤销」按钮（5秒内）\n- 批量操作可整体撤销\n- 操作历史可查看\n\n### 危险操作确认\n- 删除数据：必须二次确认\n- 批量操作：显示影响范围\n- 不可逆操作：输入确认文字\n\n---\n\n## 视觉与文案规范\n\n### 视觉层级\n1. **标题** — 24-32px，Bold\n2. **副标题** — 18-20px，Semibold\n3. **正文** — 14-16px，Regular\n4. **辅助文字** — 12-13px，Regular，灰色\n\n### 文案原则\n- 简洁明了，避免术语\n- 主动语态（「保存」而非「被保存」）\n- 正向表达（「启用通知」而非「关闭静音」）\n- 一致的语气和称呼"
+  },
+  "06": {
+    "title": "AI协作开发指南",
+    "category": "流程",
+    "tags": ["AI协作", "六阶段框架", "上下文管理", "行为准则"],
+    "content": "## 六阶段开发框架\n\n### P1 需求分析\n- 收集原始需求\n- 识别约束条件\n- 明确验收标准\n- 输出：需求文档\n\n### P2 原型设计\n- 快速验证交互\n- 收集反馈\n- 迭代修改\n- 输出：可交互原型\n\n### P3 技术设计\n- 架构决策\n- 数据模型设计\n- API 接口设计\n- 输出：技术设计文档\n\n### P4 文档编写\n- 接口文档\n- 数据库文档\n- 部署文档\n- 输出：完整文档\n\n### P5 开发实现\n- 按模块逐步实现\n- 持续集成测试\n- 代码审查\n- 输出：可运行代码\n\n### P6 测试部署\n- 功能测试\n- 性能测试\n- 部署上线\n- 输出：生产环境\n\n---\n\n## 沟通技巧\n\n### 方案先行\n```\n❌ 「帮我写一个登录功能」\n✅ 「我计划用 JWT 实现登录，方案如下：\n    1. 前端提交 email + password\n    2. 后端验证并返回 token\n    3. 前端存储 token 并在请求头携带\n    你认为这个方案如何？」\n```\n\n### 上下文提供\n每次对话提供足够的上下文：\n- 当前项目阶段\n- 已完成的工作\n- 遇到的问题\n- 期望的结果\n\n### 范围限制\n```\n❌ 「实现整个用户系统」\n✅ 「先实现用户注册和登录，包含：\n    - 注册表单（email, password, name）\n    - 登录表单（email, password）\n    - JWT token 管理\n    请先设计数据模型」\n```\n\n### 分步确认\n1. 确认理解需求\n2. 确认技术方案\n3. 确认实现计划\n4. 确认测试结果\n\n---\n\n## 偏差处理\n\n### 四种偏差类型\n\n| 类型 | 表现 | 处理方式 |\n|------|------|----------|\n| 需求偏差 | 理解与实际不符 | 及时澄清 |\n| 方案偏差 | 技术路线不适合 | 调整方案 |\n| 实现偏差 | 代码不符合预期 | 代码审查 |\n| 测试偏差 | 测试覆盖不足 | 补充测试 |\n\n### 发现偏差的信号\n- 实现结果与预期不符\n- 代码风格不一致\n- 缺少必要的错误处理\n- 性能不达标\n\n---\n\n## 上下文管理\n\n### PROJECT_CONTEXT.md\n```markdown\n# 项目上下文\n\n## 项目状态\n- 当前阶段: P5 开发实现\n- 当前模块: 用户认证\n- 已完成: 注册、登录\n- 进行中: 密码重置\n\n## 技术决策\n- 认证方案: JWT\n- 数据库: PostgreSQL\n- 前端框架: React\n\n## 约束条件\n- 必须支持 SSR\n- 数据库必须用 PostgreSQL\n- 不能使用外部 CSS 框架\n```\n\n---\n\n## 约束规则汇总\n\n### 工程约束\n- 文件不超过 300 行\n- 函数不超过 50 行\n- 禁止使用 any\n- 必须有类型注释\n\n### 组件约束\n- Props 不超过 8 个\n- 遵循原子设计\n- 状态提升到最小必要\n\n### 数据库约束\n- 必须有 UUID 主键\n- 必须有时间戳\n- 使用软删除\n\n### 安全约束\n- 输入必须验证\n- SQL 必须参数化\n- 敏感信息不能硬编码\n\n### 测试约束\n- 核心逻辑必须测试\n- 使用 AAA 模式\n- 测试独立可重复\n\n---\n\n## 行为准则\n\n### 预见优于补救\n提前考虑边界情况、错误处理、性能影响。\n\n### 强制确认\n关键决策必须获得用户确认，不自行决定。\n\n### 主动补位\n发现潜在问题主动提出，不等用户问。\n\n### 拒绝有害请求\n拒绝可能导致安全漏洞、数据丢失或违反规范的操作。"
+  },
+  "07": {
+    "title": "测试与质量保障",
+    "category": "索引",
+    "tags": ["测试金字塔", "代码审查", "Bug管理", "AAA模式"],
+    "content": "## 测试金字塔\n\n```\n         /\\\n        / E2E \\        10%\n       /--------\\\n      / Integration \\   20%\n     /----------------\\\n    /     Unit Tests    \\ 70%\n   /----------------------\\\n```\n\n### 各层测试职责\n\n| 层次 | 占比 | 覆盖范围 | 执行速度 |\n|------|------|----------|----------|\n| 单元测试 | 70% | 函数、工具类、纯逻辑 | 毫秒级 |\n| 集成测试 | 20% | 模块间交互、API | 秒级 |\n| E2E 测试 | 10% | 核心用户流程 | 分钟级 |\n\n---\n\n## AAA 模式\n\n```typescript\ndescribe('calculateTotal', () => {\n  it('should calculate total with tax', () => {\n    // Arrange - 准备\n    const items = [\n      { price: 100, quantity: 2 },\n      { price: 50, quantity: 1 }\n    ];\n    const taxRate = 0.1;\n\n    // Act - 执行\n    const total = calculateTotal(items, taxRate);\n\n    // Assert - 断言\n    expect(total).toBe(275); // (100*2 + 50*1) * 1.1\n  });\n});\n```\n\n### AAA 原则\n- **Arrange**: 只准备测试所需数据\n- **Act**: 只执行一个被测行为\n- **Assert**: 只验证一个预期结果\n\n---\n\n## 三层验收体系\n\n### 功能验收\n- 所有验收标准都满足\n- 边界情况已处理\n- 错误场景有提示\n\n### 质量验收\n- 代码符合规范\n- 无已知 bug\n- 性能达标\n- 安全审查通过\n\n### 体验验收\n- 交互流畅\n- 状态反馈完整\n- 文案清晰\n- 无障碍友好\n\n---\n\n## 四维度代码审查\n\n### 1. 正确性\n- 逻辑是否正确\n- 边界条件是否处理\n- 错误处理是否完善\n\n### 2. 可维护性\n- 命名是否清晰\n- 结构是否合理\n- 是否有重复代码\n\n### 3. 性能\n- 是否有不必要的计算\n- 是否有内存泄漏风险\n- 数据库查询是否高效\n\n### 4. 安全性\n- 输入是否验证\n- 是否有注入风险\n- 敏感数据是否保护\n\n---\n\n## Bug 管理\n\n### 严重级别\n\n| 级别 | 名称 | 定义 | 修复时限 |\n|------|------|------|----------|\n| P0 | 紧急 | 系统崩溃、数据丢失 | 立即 |\n| P1 | 严重 | 核心功能不可用 | 24小时 |\n| P2 | 一般 | 非核心功能异常 | 下个版本 |\n| P3 | 轻微 | 体验问题 | 有空时修复 |\n\n### Bug 报告模板\n```markdown\n## Bug 标题\n[简短描述]\n\n## 重现步骤\n1. ...\n2. ...\n3. ...\n\n## 期望行为\n[应该发生什么]\n\n## 实际行为\n[实际发生了什么]\n\n## 环境信息\n- 浏览器: Chrome 120\n- 操作系统: macOS 14\n- 版本: v1.2.3\n\n## 附件\n[截图/视频]\n```"
+  },
+  "08": {
+    "title": "安全与容错设计",
+    "category": "规则",
+    "tags": ["安全", "Token", "输入校验", "降级方案"],
+    "content": "## Token 生命周期\n\n### JWT Token 管理\n```\n1. 用户登录 → 生成 Access Token (15min) + Refresh Token (7天)\n2. 请求携带 Access Token → 验证有效性\n3. Access Token 过期 → 用 Refresh Token 换新\n4. Refresh Token 过期 → 重新登录\n```\n\n### 安全存储\n- Access Token: 内存变量（不持久化）\n- Refresh Token: HttpOnly Cookie\n- 禁止存储在 localStorage（XSS 风险）\n\n---\n\n## 输入校验\n\n### XSS 防护\n```typescript\n// 所有用户输入必须转义\nimport DOMPurify from 'dompurify';\n\nconst sanitized = DOMPurify.sanitize(userInput);\n\n// React 默认防 XSS，但 dangerouslySetInnerHTML 需要手动处理\n```\n\n### SQL 注入防护\n```typescript\n// ❌ 字符串拼接\nconst query = `SELECT * FROM users WHERE id = '${userId}'`;\n\n// ✅ 参数化查询\nconst query = 'SELECT * FROM users WHERE id = $1';\nconst result = await db.query(query, [userId]);\n```\n\n### 输入验证\n```typescript\nimport { z } from 'zod';\n\nconst UserSchema = z.object({\n  email: z.string().email(),\n  name: z.string().min(1).max(100),\n  age: z.number().int().min(0).max(150),\n});\n\n// 验证失败抛出 ValidationError\nconst user = UserSchema.parse(req.body);\n```\n\n---\n\n## HTTPS 与 CORS\n\n### HTTPS 强制\n- 生产环境必须使用 HTTPS\n- 配置 HSTS 头\n- 重定向 HTTP 到 HTTPS\n\n### CORS 配置\n```typescript\n// 严格限制来源\nconst corsOptions = {\n  origin: ['https://yourdomain.com'],\n  credentials: true,\n  methods: ['GET', 'POST', 'PUT', 'DELETE'],\n  allowedHeaders: ['Content-Type', 'Authorization'],\n};\n```\n\n---\n\n## 敏感配置管理\n\n### 环境变量分级\n```\n.env.development  — 开发环境\n.env.staging      — 测试环境\n.env.production   — 生产环境\n```\n\n### 敏感信息清单\n- 数据库密码\n- API 密钥\n- JWT 密钥\n- 第三方服务凭证\n\n### 禁止事项\n- ❌ 敏感信息硬编码\n- ❌ 提交 .env 到 Git\n- ❌ 日志中记录敏感信息\n- ❌ 错误信息暴露内部细节\n\n---\n\n## Rate Limiting\n\n```typescript\n// 按 IP 限制\nconst rateLimiter = {\n  windowMs: 15 * 60 * 1000, // 15 分钟\n  max: 100, // 每个 IP 最多 100 次\n  message: '请求过于频繁，请稍后再试',\n};\n\n// 按用户限制（登录接口更严格）\nconst loginLimiter = {\n  windowMs: 15 * 60 * 1000,\n  max: 5, // 15分钟内最多 5 次\n  skipSuccessfulRequests: true,\n};\n```\n\n---\n\n## 全局错误捕获\n\n### 前端全局错误\n```typescript\n// 捕获未处理的错误\nwindow.addEventListener('error', (event) => {\n  reportError({\n    type: 'uncaught-error',\n    message: event.message,\n    filename: event.filename,\n    lineno: event.lineno,\n  });\n});\n\n// 捕获 Promise 异常\nwindow.addEventListener('unhandledrejection', (event) => {\n  reportError({\n    type: 'unhandled-rejection',\n    reason: event.reason,\n  });\n});\n```\n\n### 错误分类\n\n| 类型 | 处理方式 |\n|------|----------|\n| 网络错误 | 重试 + 提示 |\n| 验证错误 | 表单提示 |\n| 权限错误 | 跳转登录 |\n| 服务器错误 | 上报 + 通用提示 |\n\n---\n\n## 降级方案\n\n### 外部服务不可用\n```typescript\n// 降级策略\nconst getWeatherData = async (city: string) => {\n  try {\n    return await weatherAPI.get(city);\n  } catch (error) {\n    // 降级: 使用缓存数据\n    const cached = await cache.get(`weather:${city}`);\n    if (cached) return cached;\n    // 降级: 返回默认值\n    return { temp: '--', condition: '未知' };\n  }\n};\n```\n\n### 离线模式\n- Service Worker 缓存关键资源\n- 离线时显示缓存内容\n- 恢复连接后自动同步\n\n### 数据损坏恢复\n- 定期备份数据\n- 保留操作日志\n- 支持数据回滚\n\n---\n\n## AI 安全审查清单\n\n- [ ] 所有输入都经过验证\n- [ ] SQL 查询使用参数化\n- [ ] 敏感信息不硬编码\n- [ ] CORS 配置正确\n- [ ] Rate Limiting 已配置\n- [ ] 错误信息不暴露内部细节\n- [ ] 日志不记录敏感数据\n- [ ] 文件上传有大小和类型限制\n- [ ] 认证和授权检查完整\n- [ ] HTTPS 已启用"
+  },
+  "09": {
+    "title": "性能与缓存策略",
+    "category": "索引",
+    "tags": ["性能优化", "缓存", "加载性能", "渲染性能"],
+    "content": "## 性能指标\n\n### Core Web Vitals\n\n| 指标 | 全称 | 目标值 | 说明 |\n|------|------|--------|------|\n| FCP | First Contentful Paint | < 1.8s | 首次内容绘制 |\n| LCP | Largest Contentful Paint | < 2.5s | 最大内容绘制 |\n| TTI | Time to Interactive | < 3.8s | 可交互时间 |\n| CLS | Cumulative Layout Shift | < 0.1 | 累积布局偏移 |\n| FID | First Input Delay | < 100ms | 首次输入延迟 |\n\n---\n\n## 加载性能\n\n### 代码拆分\n```typescript\n// 路由级拆分\nconst Dashboard = lazy(() => import('./pages/Dashboard'));\nconst Settings = lazy(() => import('./pages/Settings'));\n\n// 组件级拆分\nconst HeavyChart = lazy(() => import('./components/HeavyChart'));\n```\n\n### Tree Shaking\n```typescript\n// ❌ 整体导入\nimport _ from 'lodash';\n\n// ✅ 按需导入\nimport debounce from 'lodash/debounce';\n```\n\n### 懒加载\n```typescript\n// 图片懒加载\n<img loading=\"lazy\" src=\"large-image.jpg\" />\n\n// 组件懒加载\nconst Comments = lazy(() => import('./Comments'));\n```\n\n### 资源优化\n- 图片使用 WebP 格式\n- 使用 CDN 加速静态资源\n- 启用 Gzip/Brotli 压缩\n- 预加载关键资源：`<link rel=\"preload\">`\n\n---\n\n## 渲染性能\n\n### React 优化\n```typescript\n// React.memo 避免不必要的重渲染\nconst ExpensiveList = React.memo(({ items }) => {\n  return items.map(item => <ListItem key={item.id} item={item}} />);\n});\n\n// useMemo 缓存计算结果\nconst sortedItems = useMemo(() => \n  items.sort((a, b) => a.name.localeCompare(b.name)),\n  [items]\n);\n\n// useCallback 缓存函数引用\nconst handleClick = useCallback((id: string) => {\n  setSelected(id);\n}, []);\n```\n\n### 虚拟列表\n```typescript\n// 大量数据使用虚拟滚动\nimport { FixedSizeList } from 'react-window';\n\n<FixedSizeList\n  height={600}\n  itemCount={10000}\n  itemSize={50}\n>\n  {({ index, style }) => (\n    <div style={style}>{items[index].name}</div>\n  )}\n</FixedSizeList>\n```\n\n### GPU 加速\n```css\n/* 使用 transform 和 opacity 触发 GPU 加速 */\n.animated {\n  will-change: transform, opacity;\n  transform: translateZ(0);\n}\n```\n\n---\n\n## 数据性能\n\n### 索引优化\n- 为常用查询字段建索引\n- 复合索引注意最左前缀\n- 定期分析慢查询日志\n\n### 查询优化\n```sql\n-- ❌ SELECT *\nSELECT * FROM users WHERE status = 'active';\n\n-- ✅ 只查需要的字段\nSELECT id, name, email FROM users WHERE status = 'active';\n\n-- ❌ N+1 查询\nSELECT * FROM posts;\n-- 然后对每个 post: SELECT * FROM users WHERE id = post.author_id\n\n-- ✅ JOIN 查询\nSELECT p.*, u.name FROM posts p JOIN users u ON p.author_id = u.id;\n```\n\n---\n\n## 缓存分层设计\n\n### 四层缓存\n\n```\n┌─────────────────────────────────────┐\n│  L1: 内存缓存 (变量/Map)           │ ← 最快，容量小\n├─────────────────────────────────────┤\n│  L2: 本地数据库 (IndexedDB)        │ ← 较快，容量中\n├─────────────────────────────────────┤\n│  L3: Service Worker                │ ← 网络拦截\n├─────────────────────────────────────┤\n│  L4: HTTP 缓存 (Cache-Control)     │ ← 最慢，容量大\n└─────────────────────────────────────┘\n```\n\n### 缓存策略\n| 策略 | 适用场景 | 示例 |\n|------|----------|------|\n| Cache-First | 不常变化的数据 | 静态资源 |\n| Network-First | 实时数据 | API 响应 |\n| Stale-While-Revalidate | 可容忍短暂延迟 | 列表数据 |\n| Network-Only | 敏感数据 | 支付信息 |\n\n### 缓存失效\n```typescript\n// 时间失效\nconst CACHE_TTL = 5 * 60 * 1000; // 5分钟\n\n// 手动失效\nconst invalidateCache = (key: string) => {\n  cache.delete(key);\n};\n\n// 版本失效\nconst cacheKey = `data:v${version}:${id}`;\n```"
+  },
+  "10": {
+    "title": "部署与环境管理",
+    "category": "索引",
+    "tags": ["部署", "Docker", "CI/CD", "配置管理"],
+    "content": "## 部署方案选型\n\n| 方案 | 适用场景 | 优点 | 缺点 |\n|------|----------|------|------|\n| Docker | 标准部署 | 环境一致 | 需要运维 |\n| 云服务器 | 传统部署 | 灵活控制 | 运维成本高 |\n| Serverless | 事件驱动 | 自动扩缩 | 冷启动延迟 |\n| Vercel/Netlify | 前端项目 | 零配置 | 功能受限 |\n\n---\n\n## Dockerfile 规范\n\n### 多阶段构建\n```dockerfile\n# 阶段 1: 构建\nFROM node:20-alpine AS builder\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY . .\nRUN npm run build\n\n# 阶段 2: 运行\nFROM node:20-alpine AS runner\nWORKDIR /app\nCOPY --from=builder /app/dist ./dist\nCOPY --from=builder /app/node_modules ./node_modules\nEXPOSE 3000\nCMD [\"node\", \"dist/server.js\"]\n```\n\n### 优化原则\n- 使用 alpine 基础镜像\n- 合并 RUN 指令减少层数\n- 利用缓存：先复制 package.json\n- 多阶段构建减小镜像体积\n\n---\n\n## CI/CD\n\n### Git Hook\n```json\n// package.json\n{\n  \"husky\": {\n    \"hooks\": {\n      \"pre-commit\": \"lint-staged\",\n      \"commit-msg\": \"commitlint -E HUSKY_GIT_PARAMS\"\n    }\n  },\n  \"lint-staged\": {\n    \"*.{ts,tsx}\": [\"eslint --fix\", \"prettier --write\"],\n    \"*.md\": [\"prettier --write\"]\n  }\n}\n```\n\n### 构建脚本\n```json\n// package.json scripts\n{\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"tsc && vite build\",\n    \"test\": \"vitest\",\n    \"lint\": \"eslint src/\",\n    \"preview\": \"vite preview\"\n  }\n}\n```\n\n---\n\n## 配置分层\n\n### 优先级\n```\n环境变量 > 配置文件 > 代码默认值\n```\n\n### 配置管理\n```typescript\n// config.ts\nconst config = {\n  port: parseInt(process.env.PORT || '3000'),\n  dbUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/mydb',\n  jwtSecret: process.env.JWT_SECRET, // 必须设置\n  nodeEnv: process.env.NODE_ENV || 'development',\n};\n\n// 启动时验证必填配置\nif (!config.jwtSecret) {\n  throw new Error('JWT_SECRET environment variable is required');\n}\n```\n\n---\n\n## Feature Flag\n\n```typescript\n// 简单的 Feature Flag\nconst featureFlags = {\n  NEW_DASHBOARD: process.env.FF_NEW_DASHBOARD === 'true',\n  BETA_SEARCH: process.env.FF_BETA_SEARCH === 'true',\n};\n\n// 使用\nif (featureFlags.NEW_DASHBOARD) {\n  return <NewDashboard />;\n}\nreturn <OldDashboard />;\n```\n\n---\n\n## 备份与恢复\n\n### 备份策略\n- 数据库: 每日自动备份\n- 文件: 增量备份 + 全量备份\n- 配置: 版本控制\n\n### 恢复流程\n1. 评估影响范围\n2. 选择恢复时间点\n3. 执行恢复操作\n4. 验证数据完整性\n5. 通知相关人员"
+  },
+  "11": {
+    "title": "开发里程碑计划",
+    "category": "流程",
+    "tags": ["里程碑", "计划", "拆分", "依赖管理"],
+    "content": "## 五步拆分法\n\n### 步骤\n1. **识别交付物** — 明确要交付什么\n2. **分解任务** — 将交付物拆分为独立任务\n3. **估算工时** — 给每个任务估算时间\n4. **识别依赖** — 找出任务间的依赖关系\n5. **排列顺序** — 按依赖关系排序\n\n### 拆分原则\n- 每个任务不超过 4 小时\n- 任务之间尽量独立\n- 先做核心功能，后做增强功能\n- 预留 20% 缓冲时间\n\n---\n\n## 里程碑四原则\n\n1. **可交付** — 每个里程碑都有可演示的成果\n2. **可验证** — 有明确的验收标准\n3. **时间盒** — 有明确的截止日期\n4. **渐进式** — 后续里程碑建立在前面的基础上\n\n---\n\n## 六步开发循环\n\n```\n1. 规划 → 2. 设计 → 3. 实现 → 4. 测试 → 5. 审查 → 6. 部署\n   ↑                                                    ↓\n   ←←←←←←←←←←←←←← 反馈循环 ←←←←←←←←←←←←←←←←←←←←←←←←←\n```\n\n### 每步要点\n\n| 步骤 | 关键产出 | 时间占比 |\n|------|----------|----------|\n| 规划 | 任务清单、优先级 | 10% |\n| 设计 | 技术方案、数据模型 | 15% |\n| 实现 | 可运行代码 | 40% |\n| 测试 | 测试通过 | 15% |\n| 审查 | 代码审查完成 | 10% |\n| 部署 | 部署到目标环境 | 10% |\n\n---\n\n## 里程碑模板\n\n```markdown\n## Milestone M1: 基础架构 (第1-2周)\n\n### 目标\n搭建项目基础架构，实现核心框架\n\n### 交付物\n- [ ] 项目脚手架\n- [ ] 数据库设计\n- [ ] 基础 API 框架\n- [ ] 前端框架搭建\n\n### 验收标准\n- 项目可正常运行\n- 数据库可连接\n- API 可调用\n- 前端可展示\n\n### 依赖\n- 无\n\n---\n\n## Milestone M2: 核心功能 (第3-4周)\n\n### 目标\n实现核心业务功能\n\n### 交付物\n- [ ] 用户认证\n- [ ] 核心 CRUD\n- [ ] 基础 UI\n\n### 验收标准\n- 用户可注册登录\n- 数据可增删改查\n- 界面可用\n\n### 依赖\n- M1 完成\n```\n\n---\n\n## 依赖管理\n\n### 依赖图\n```\nM1 (基础架构)\n├── M2 (核心功能) — 依赖 M1\n│   ├── M3 (高级功能) — 依赖 M2\n│   └── M4 (性能优化) — 依赖 M2\n└── M5 (运维部署) — 依赖 M1\n```\n\n### 关键路径\n- 识别最长依赖链\n- 优先处理关键路径上的任务\n- 非关键路径任务可以并行\n\n---\n\n## 动态调整\n\n### 调整触发条件\n- 需求变更\n- 技术风险\n- 资源变化\n- 进度偏差\n\n### 调整原则\n1. 评估影响范围\n2. 与相关方沟通\n3. 更新计划文档\n4. 记录变更原因"
+  },
+  "12": {
+    "title": "健康检查清单",
+    "category": "清单",
+    "tags": ["检查清单", "质量保障", "代码审查"],
+    "content": "## 10 个检查维度\n\n### 1. AI 交付检查\n- [ ] 代码能正常运行\n- [ ] 无 TypeScript 错误\n- [ ] 无 ESLint 警告\n- [ ] 文件大小在限制内\n- [ ] 命名符合规范\n\n### 2. 代码审查\n- [ ] 逻辑正确\n- [ ] 边界情况处理\n- [ ] 错误处理完善\n- [ ] 无重复代码\n- [ ] 类型定义完整\n\n### 3. 功能验收\n- [ ] 需求全部实现\n- [ ] 验收标准满足\n- [ ] 异常场景有提示\n- [ ] 边界值已处理\n\n### 4. 体验验收\n- [ ] 加载状态有反馈\n- [ ] 空状态有引导\n- [ ] 错误状态有提示\n- [ ] 操作有确认\n- [ ] 文案清晰\n\n### 5. 数据库扩展\n- [ ] 新字段有默认值\n- [ ] 迁移脚本可回滚\n- [ ] 索引已优化\n- [ ] 数据完整性约束\n\n### 6. 安全检查\n- [ ] 输入已验证\n- [ ] SQL 参数化\n- [ ] 敏感信息保护\n- [ ] 权限检查完整\n- [ ] CORS 配置正确\n\n### 7. 依赖检查\n- [ ] 无新增不必要的依赖\n- [ ] 依赖版本锁定\n- [ ] 无已知安全漏洞\n- [ ] 许可证兼容\n\n### 8. 重构检查\n- [ ] 重构目标明确\n- [ ] 测试全部通过\n- [ ] 无功能变更\n- [ ] 代码更清晰\n\n### 9. 架构健康\n- [ ] 关注点分离\n- [ ] 模块耦合度低\n- [ ] 接口设计合理\n- [ ] 无循环依赖\n\n### 10. 可恢复性\n- [ ] 有回滚方案\n- [ ] 数据可恢复\n- [ ] 有降级策略\n- [ ] 有监控告警"
+  },
+  "13": {
+    "title": "需求分析",
+    "category": "索引",
+    "tags": ["需求分析", "用户故事", "MVP", "变更管理"],
+    "content": "## 四条核心原则\n\n### 1. 先问题后方案\n- 先理解「为什么要做」\n- 再讨论「怎么做」\n- 避免直接跳到解决方案\n\n### 2. 可验证\n- 每个需求必须有验收标准\n- 验收标准必须是可测试的\n- 避免模糊描述（「用户体验要好」）\n\n### 3. 记录决策\n- 记录为什么选择这个方案\n- 记录被否决的方案及原因\n- 为后续维护提供上下文\n\n### 4. 划清边界\n- 明确做什么、不做什么\n- 识别技术约束和业务约束\n- 设定时间与资源边界\n\n---\n\n## 五问澄清法\n\n```\n1. 谁会使用这个功能？（目标用户）\n2. 他们想解决什么问题？（核心需求）\n3. 他们现在怎么解决的？（现有方案）\n4. 这个功能的成功标准是什么？（验收标准）\n5. 有没有不需要做的部分？（边界）\n```\n\n---\n\n## 用户故事与验收标准\n\n### 格式\n```\n作为 [角色]，\n我想要 [功能]，\n以便 [价值]。\n\n验收标准:\n- [ ] 条件 1\n- [ ] 条件 2\n- [ ] 条件 3\n```\n\n### 示例\n```\n作为一个已注册用户，\n我想要通过邮箱和密码登录，\n以便访问我的个人数据。\n\n验收标准:\n- [ ] 输入正确的邮箱和密码可以登录\n- [ ] 输入错误的密码显示错误提示\n- [ ] 连续5次错误锁定账户15分钟\n- [ ] 登录成功后跳转到首页\n- [ ] 登录状态保持7天\n```\n\n---\n\n## 异常场景补充\n\n### 异常场景清单\n- 网络断开\n- 服务器错误\n- 数据冲突\n- 权限不足\n- 并发操作\n- 输入超长\n- 特殊字符\n- 空数据\n\n---\n\n## MVP 与不做清单\n\n### MVP 定义\n**M**inimum **V**iable **P**roduct — 最小可行产品\n\n- 只包含核心功能\n- 能验证核心假设\n- 可以快速交付\n\n### 不做清单\n```\n明确列出以下内容:\n1. 本期不做的功能\n2. 明确的技术限制\n3. 暂不考虑的场景\n4. 需要后续版本实现的内容\n```\n\n---\n\n## 需求变更管理\n\n### 变更流程\n1. 提出变更请求\n2. 评估影响范围\n3. 获得批准\n4. 更新文档\n5. 调整计划\n\n### 影响评估\n- 对现有功能的影响\n- 对开发进度的影响\n- 对测试工作的影响\n- 对部署计划的影响\n\n---\n\n## AI 协作分工\n\n### 人类负责\n- 需求理解与优先级\n- 业务逻辑判断\n- 最终决策\n- 用户体验判断\n\n### AI 负责\n- 技术方案评估\n- 竞品调研\n- 文档生成\n- 代码实现\n- 测试编写"
+  },
+  "14": {
+    "title": "最佳实践案例 - DogEar",
+    "category": "索引",
+    "tags": ["案例", "DogEar", "全流程", "实战"],
+    "content": "## 项目概述\n\nDogEar 是一个跨设备书签管理工具，支持浏览器插件、Web 应用和 Raindrop.io 集成。\n\n---\n\n## 需求分析\n\n### 冲突识别\n- 离线优先 vs 云同步\n- 自建系统 vs 集成现有服务\n- 功能完整 vs 快速上线\n\n### MoSCoW 优先级\n\n| 级别 | 功能 |\n|------|------|\n| Must | 书签CRUD、文件夹组织、标签系统 |\n| Should | 浏览器插件、搜索功能、导入导出 |\n| Could | Raindrop.io同步、数据统计 |\n| Won't | 多用户协作、团队空间 |\n\n---\n\n## 信息架构设计\n\n### 页面结构\n```\n首页 (书签列表)\n├── 收件箱 (待整理)\n├── 文件夹 (按主题组织)\n│   ├── 技术\n│   ├── 设计\n│   └── 阅读\n├── 标签 (自定义分类)\n├── 收藏 (快速访问)\n└── 设置\n```\n\n---\n\n## 状态设计\n\n### 核心状态\n```typescript\ninterface AppState {\n  // 书签状态\n  bookmarks: Bookmark[];\n  folders: Folder[];\n  tags: Tag[];\n  \n  // UI 状态\n  selectedBookmark: string | null;\n  viewMode: 'grid' | 'list';\n  searchQuery: string;\n  \n  // 同步状态\n  syncStatus: 'synced' | 'syncing' | 'offline';\n  lastSyncTime: Date | null;\n  \n  // 操作队列\n  pendingOperations: Operation[];\n}\n```\n\n---\n\n## 数据模型\n\n### 核心实体\n```sql\n-- 书签表\nCREATE TABLE bookmarks (\n  id UUID PRIMARY KEY,\n  url TEXT NOT NULL,\n  title VARCHAR(500),\n  description TEXT,\n  favicon_url TEXT,\n  folder_id UUID REFERENCES folders(id),\n  is_favorite BOOLEAN DEFAULT false,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  updated_at TIMESTAMPTZ DEFAULT NOW(),\n  deleted_at TIMESTAMPTZ\n);\n\n-- 文件夹表\nCREATE TABLE folders (\n  id UUID PRIMARY KEY,\n  name VARCHAR(200) NOT NULL,\n  parent_id UUID REFERENCES folders(id),\n  sort_order INTEGER DEFAULT 0,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  deleted_at TIMESTAMPTZ\n);\n\n-- 标签表\nCREATE TABLE tags (\n  id UUID PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  color VARCHAR(7),\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\n-- 书签-标签关联\nCREATE TABLE bookmark_tags (\n  bookmark_id UUID REFERENCES bookmarks(id),\n  tag_id UUID REFERENCES tags(id),\n  PRIMARY KEY (bookmark_id, tag_id)\n);\n\n-- 同步队列\nCREATE TABLE sync_queue (\n  id UUID PRIMARY KEY,\n  operation VARCHAR(20) NOT NULL,\n  entity_type VARCHAR(50) NOT NULL,\n  entity_id UUID NOT NULL,\n  payload JSONB,\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  synced BOOLEAN DEFAULT false\n);\n```\n\n---\n\n## API 设计\n\n### Skill API（自描述端点）\n```typescript\n// GET /api/skills\n// 返回所有可用的 API 端点描述\n{\n  \"skills\": [\n    {\n      \"name\": \"bookmarks\",\n      \"description\": \"书签管理\",\n      \"endpoints\": [\n        { \"method\": \"GET\", \"path\": \"/bookmarks\", \"description\": \"获取书签列表\" },\n        { \"method\": \"POST\", \"path\": \"/bookmarks\", \"description\": \"创建书签\" },\n        { \"method\": \"PUT\", \"path\": \"/bookmarks/:id\", \"description\": \"更新书签\" },\n        { \"method\": \"DELETE\", \"path\": \"/bookmarks/:id\", \"description\": \"删除书签\" }\n      ]\n    }\n  ]\n}\n```\n\n### Raindrop.io 集成\n```typescript\n// 同步 Raindrop 书签\nconst syncRaindrop = async () => {\n  const raindropBookmarks = await raindropAPI.getBookmarks();\n  \n  for (const rb of raindropBookmarks) {\n    await bookmarkService.upsert({\n      url: rb.link,\n      title: rb.title,\n      description: rb.note,\n      tags: rb.tags,\n      source: 'raindrop'\n    });\n  }\n};\n```\n\n---\n\n## 组件规划\n\n### 原子设计层级\n\n```\nAtoms:\n- Button, Input, Badge, Avatar, Icon, Tooltip\n\nMolecules:\n- BookmarkCard, FolderTree, TagInput, SearchBar\n\nOrganisms:\n- BookmarkList, Sidebar, Toolbar, BookmarkEditor\n\nTemplates:\n- MainLayout, DetailLayout\n\nPages:\n- HomePage, FolderPage, TagPage, SettingsPage\n```\n\n---\n\n## 里程碑规划\n\n### M1: 基础功能 (第1-2周)\n- [x] 项目脚手架\n- [x] 数据库设计\n- [x] 书签 CRUD API\n- [x] 基础 UI\n\n### M2: 核心体验 (第3-4周)\n- [ ] 文件夹管理\n- [ ] 标签系统\n- [ ] 搜索功能\n- [ ] 浏览器插件\n\n### M3: 高级功能 (第5-6周)\n- [ ] Raindrop.io 同步\n- [ ] 导入导出\n- [ ] 数据统计\n- [ ] 离线支持\n\n### M4: 优化上线 (第7-8周)\n- [ ] 性能优化\n- [ ] 安全审查\n- [ ] 部署上线\n- [ ] 文档完善\n\n---\n\n## AI 协作编码示例\n\n### 对话示例\n```\n用户: 我需要实现书签的批量导入功能\n\nAI: 我理解你需要支持从 CSV 和 HTML 文件导入书签。\n方案如下：\n1. 支持 CSV 格式（URL, Title, Folder）\n2. 支持 HTML 书签格式（浏览器导出）\n3. 导入前预览，确认后执行\n4. 显示导入进度和结果\n\n你认为这个方案如何？需要调整吗？\n```\n\n---\n\n## 验收检查\n\n- [ ] 书签 CRUD 正常\n- [ ] 文件夹嵌套正常\n- [ ] 标签关联正常\n- [ ] 搜索功能正常\n- [ ] 同步状态显示正确\n- [ ] 离线操作可恢复\n- [ ] 性能达标\n\n---\n\n## 部署方案\n\n### Docker 部署\n```dockerfile\nFROM node:20-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --production\nCOPY dist ./dist\nEXPOSE 3000\nCMD [\"node\", \"dist/server.js\"]\n```\n\n### Tailscale 组网\n- 使用 Tailscale 实现内网穿透\n- 免端口映射\n- 自动 HTTPS"
+  }
+}
+</script>
+<script>
+(function() {
+  'use strict';
+
+  // ========== Data Loading ==========
+  const docsData = JSON.parse(document.getElementById('docs-data').textContent);
+  const mainContent = document.getElementById('main-content');
+  const sidebarTabs = document.getElementById('sidebar-tabs');
+  const sidebarNav = document.getElementById('sidebar-nav');
+  const searchInput = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
+  const progressBar = document.getElementById('progress-bar');
+
+  // ========== Navigation Dimensions ==========
+  const dimensions = [
+    {
+      id: 'flow-axis',
+      label: '开发流程轴',
+      icon: '🔄',
+      items: [
+        { id: 'flow-overview', label: '全流程概览', icon: '📋' },
+        { id: 'flow-p1', label: 'P1 需求分析', icon: '📝' },
+        { id: 'flow-p2', label: 'P2 原型设计', icon: '🎨' },
+        { id: 'flow-p3', label: 'P3 技术设计', icon: '🏗️' },
+        { id: 'flow-p4', label: 'P4 文档编写', icon: '📄' },
+        { id: 'flow-p5', label: 'P5 开发实现', icon: '💻' },
+        { id: 'flow-p6', label: 'P6 测试部署', icon: '🚀' }
+      ]
+    },
+    {
+      id: 'knowledge-graph',
+      label: '主题知识图',
+      icon: '🗺️',
+      items: [
+        { id: 'kg-overview', label: '知识图谱总览', icon: '📊' }
+      ]
+    },
+    {
+      id: 'role-perspective',
+      label: '角色视角',
+      icon: '👤',
+      items: [
+        { id: 'role-overview', label: '角色视角总览', icon: '🎭' }
+      ]
+    },
+    {
+      id: 'problem-oriented',
+      label: '问题导向',
+      icon: '❓',
+      items: [
+        { id: 'problem-overview', label: '常见问题', icon: '🔍' }
+      ]
+    },
+    {
+      id: 'decision-tree',
+      label: '决策树',
+      icon: '🌳',
+      items: [
+        { id: 'decision-overview', label: '决策指南', icon: '🧭' }
+      ]
+    },
+    {
+      id: 'checklist',
+      label: '检查清单',
+      icon: '✅',
+      items: [
+        { id: 'checklist-overview', label: '健康检查清单', icon: '📋' }
+      ]
+    },
+    {
+      id: 'quick-ref',
+      label: '速查手册',
+      icon: '⚡',
+      items: [
+        { id: 'qr-overview', label: '速查总览', icon: '📖' }
+      ]
+    },
+    {
+      id: 'full-docs',
+      label: '完整文档',
+      icon: '📚',
+      items: Object.keys(docsData).map(k => ({
+        id: 'doc-' + k,
+        label: docsData[k].title,
+        icon: '📄'
+      }))
+    }
+  ];
+
+  // ========== State ==========
+  let currentDimension = 'full-docs';
+  let currentDocId = 'doc-00';
+  let currentTheme = localStorage.getItem('vcp-theme') || 'dark';
+
+  // ========== Theme ==========
+  function setTheme(theme) {
+    currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('vcp-theme', theme);
+    document.getElementById('btn-theme').textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
+  setTheme(currentTheme);
+
+  document.getElementById('btn-theme').addEventListener('click', () => {
+    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+  });
+
+  // ========== Sidebar Toggle ==========
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('btn-sidebar').addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+  });
+  document.getElementById('sidebar-toggle').addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+  });
+
+  // ========== Render Sidebar Tabs ==========
+  function renderSidebarTabs() {
+    sidebarTabs.innerHTML = '';
+    dimensions.forEach(dim => {
+      const tab = document.createElement('div');
+      tab.className = 'sidebar-tab' + (currentDimension === dim.id ? ' active' : '');
+      tab.textContent = dim.icon + ' ' + dim.label;
+      tab.addEventListener('click', () => {
+        currentDimension = dim.id;
+        renderSidebarTabs();
+        renderSidebarNav();
+      });
+      sidebarTabs.appendChild(tab);
+    });
+  }
+
+  // ========== Render Sidebar Nav ==========
+  function renderSidebarNav() {
+    sidebarNav.innerHTML = '';
+    const dim = dimensions.find(d => d.id === currentDimension);
+    if (!dim) return;
+
+    dim.items.forEach(item => {
+      const navItem = document.createElement('div');
+      navItem.className = 'nav-item' + (currentDocId === item.id ? ' active' : '');
+      navItem.innerHTML = '<span class="nav-icon">' + item.icon + '</span>' + item.label;
+      navItem.addEventListener('click', () => {
+        currentDocId = item.id;
+        renderSidebarNav();
+        renderContent();
+      });
+      sidebarNav.appendChild(navItem);
+    });
+  }
+
+  // ========== Render Content ==========
+  function renderContent() {
+    let html = '';
+
+    if (currentDocId.startsWith('doc-')) {
+      const docKey = currentDocId.replace('doc-', '');
+      const doc = docsData[docKey];
+      if (doc) {
+        html = renderDocPage(doc, docKey);
+      }
+    } else if (currentDocId.startsWith('flow-')) {
+      html = renderFlowAxis();
+    } else if (currentDocId === 'kg-overview') {
+      html = renderKnowledgeGraph();
+    } else if (currentDocId === 'role-overview') {
+      html = renderRolePerspective();
+    } else if (currentDocId === 'problem-overview') {
+      html = renderProblemOriented();
+    } else if (currentDocId === 'decision-overview') {
+      html = renderDecisionTree();
+    } else if (currentDocId === 'checklist-overview') {
+      html = renderChecklist();
+    } else if (currentDocId === 'qr-overview') {
+      html = renderQuickRef();
+    }
+
+    mainContent.innerHTML = '<div class="doc-section active">' + html + '</div>';
+    mainContent.scrollTop = 0;
+    updateProgress();
+
+    // Post-render: add copy buttons, checkbox listeners, etc.
+    setTimeout(postRender, 50);
+  }
+
+  // ========== Doc Page Renderer ==========
+  function renderDocPage(doc, key) {
+    const tags = doc.tags.map(t => '<span class="doc-meta-tag">' + t + '</span>').join('');
+    const rendered = marked.parse(doc.content);
+    return '<div class="breadcrumb"><a onclick="window.__nav(\'full-docs\')">完整文档</a> <span>›</span> <span>' + doc.title + '</span></div>' +
+      '<div class="dimension-header"><h1>' + doc.title + '</h1><div class="doc-meta">' + tags + '</div></div>' +
+      '<div class="doc-body">' + rendered + '</div>';
+  }
+
+  // ========== Flow Axis ==========
+  function renderFlowAxis() {
+    const steps = [
+      { phase: 'P1', title: '需求分析', desc: '收集原始需求，识别约束条件，明确验收标准', docs: ['00', '13'], color: '#e74c3c' },
+      { phase: 'P2', title: '原型设计', desc: '快速验证交互，收集反馈，迭代修改', docs: ['05'], color: '#e67e22' },
+      { phase: 'P3', title: '技术设计', desc: '架构决策，数据模型设计，API接口设计', docs: ['01', '02', '03', '04'], color: '#f1c40f' },
+      { phase: 'P4', title: '文档编写', desc: '接口文档，数据库文档，部署文档', docs: ['00', '06'], color: '#2ecc71' },
+      { phase: 'P5', title: '开发实现', desc: '按模块逐步实现，持续集成测试，代码审查', docs: ['01', '04', '06'], color: '#3498db' },
+      { phase: 'P6', title: '测试部署', desc: '功能测试，性能测试，部署上线', docs: ['07', '09', '10'], color: '#9b59b6' }
+    ];
+
+    let html = '<div class="dimension-header"><h1>🔄 开发流程轴</h1><p>六阶段开发框架 P1-P6 全流程导航</p></div>';
+    html += '<div class="flow-timeline">';
+    steps.forEach(step => {
+      const docTags = step.docs.map(d => {
+        const doc = docsData[d];
+        return '<span class="flow-step-doc-tag" onclick="window.__nav(\'doc-' + d + '\')" style="cursor:pointer">' + (doc ? doc.title : d) + '</span>';
+      }).join('');
+      html += '<div class="flow-step" style="border-left: 3px solid ' + step.color + '">' +
+        '<div class="flow-step-title">' + step.phase + ' ' + step.title + '</div>' +
+        '<div class="flow-step-desc">' + step.desc + '</div>' +
+        '<div class="flow-step-docs">' + docTags + '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ========== Knowledge Graph ==========
+  function renderKnowledgeGraph() {
+    const topics = [
+      { icon: '📐', title: '工程原则', desc: '可维护性、单一职责、关注点分离、显式优于隐式', docs: ['01'], color: '#4361ee' },
+      { icon: '🗄️', title: '数据模型', desc: '实体识别、字段设计、索引策略、Schema迁移', docs: ['02'], color: '#00d4ff' },
+      { icon: '🔌', title: 'API设计', desc: 'RESTful规范、错误处理、兼容性设计', docs: ['03'], color: '#2ecc71' },
+      { icon: '🧩', title: '组件设计', desc: '原子设计、拆分复用、API设计、注册表', docs: ['04'], color: '#e74c3c' },
+      { icon: '🎨', title: '用户体验', desc: '信息架构、状态设计、操作反馈、容错', docs: ['05'], color: '#f39c12' },
+      { icon: '🤖', title: 'AI协作', desc: '六阶段框架、沟通技巧、上下文管理', docs: ['06'], color: '#9b59b6' },
+      { icon: '🧪', title: '测试质量', desc: '测试金字塔、AAA模式、三层验收', docs: ['07'], color: '#1abc9c' },
+      { icon: '🔒', title: '安全设计', desc: 'Token管理、输入校验、降级方案', docs: ['08'], color: '#e67e22' },
+      { icon: '⚡', title: '性能优化', desc: '加载性能、渲染优化、缓存分层', docs: ['09'], color: '#3498db' },
+      { icon: '🚀', title: '部署运维', desc: 'Docker、CI/CD、配置管理', docs: ['10'], color: '#2c3e50' },
+      { icon: '📋', title: '里程碑', desc: '五步拆分、四原则、六步循环', docs: ['11'], color: '#16a085' },
+      { icon: '✅', title: '健康检查', desc: '10个检查维度，全面质量保障', docs: ['12'], color: '#8e44ad' },
+      { icon: '📝', title: '需求分析', desc: '五问澄清、用户故事、MVP', docs: ['13'], color: '#c0392b' },
+      { icon: '🏆', title: 'DogEar案例', desc: '全流程实战：需求→设计→开发→部署', docs: ['14'], color: '#d35400' }
+    ];
+
+    let html = '<div class="dimension-header"><h1>🗺️ 主题知识图</h1><p>知识领域总览与文档关联</p></div>';
+    html += '<div class="kg-grid">';
+    topics.forEach(topic => {
+      const docTags = topic.docs.map(d => {
+        const doc = docsData[d];
+        return '<span class="kg-tag" onclick="window.__nav(\'doc-' + d + '\')" style="cursor:pointer">' + (doc ? doc.title : d) + '</span>';
+      }).join('');
+      html += '<div class="kg-card" style="border-top: 3px solid ' + topic.color + '">' +
+        '<div class="kg-card-icon">' + topic.icon + '</div>' +
+        '<div class="kg-card-title">' + topic.title + '</div>' +
+        '<div class="kg-card-desc">' + topic.desc + '</div>' +
+        '<div class="kg-card-tags">' + docTags + '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ========== Role Perspective ==========
+  function renderRolePerspective() {
+    const roles = [
+      {
+        name: '产品经理', icon: '📋',
+        sections: [
+          { title: '核心关注', items: ['需求分析与优先级（13-需求分析）', '用户体验设计（05-UX指南）', '项目里程碑规划（11-里程碑计划）', '验收标准定义（00-导读）'] },
+          { title: '关键文档', items: ['13-需求分析：五问澄清法、用户故事', '05-UX指南：信息架构、状态设计', '11-里程碑：五步拆分法、四原则'] }
+        ]
+      },
+      {
+        name: '前端开发者', icon: '💻',
+        sections: [
+          { title: '核心关注', items: ['组件设计规范（04-组件设计）', '开发规范与工程原则（01-开发规范）', '性能优化（09-性能缓存）', '用户体验实现（05-UX指南）'] },
+          { title: '关键文档', items: ['04-组件设计：原子设计、API设计', '01-开发规范：代码规范、命名规范', '09-性能：代码拆分、React优化'] }
+        ]
+      },
+      {
+        name: '后端开发者', icon: '⚙️',
+        sections: [
+          { title: '核心关注', items: ['API设计规范（03-API设计）', '数据库设计（02-数据库设计）', '安全与容错（08-安全设计）', '性能与缓存（09-性能缓存）'] },
+          { title: '关键文档', items: ['03-API设计：RESTful、错误处理', '02-数据库：实体识别、索引设计', '08-安全：Token管理、输入校验'] }
+        ]
+      },
+      {
+        name: 'AI助手', icon: '🤖',
+        sections: [
+          { title: '核心关注', items: ['AI协作开发指南（06-AI协作）', '六阶段开发框架（P1-P6）', '约束规则汇总', '行为准则'] },
+          { title: '关键文档', items: ['06-AI协作：沟通技巧、偏差处理', '01-开发规范：工程约束', '12-健康检查：交付检查清单'] }
+        ]
+      }
+    ];
+
+    let html = '<div class="dimension-header"><h1>👤 角色视角</h1><p>不同角色关注的知识领域</p></div>';
+    html += '<div class="role-tabs">';
+    roles.forEach((role, i) => {
+      html += '<div class="role-tab' + (i === 0 ? ' active' : '') + '" data-role="' + i + '">' + role.icon + ' ' + role.name + '</div>';
+    });
+    html += '</div>';
+    roles.forEach((role, i) => {
+      html += '<div class="role-content' + (i === 0 ? ' active' : '') + '" data-role-content="' + i + '">';
+      role.sections.forEach(sec => {
+        html += '<div class="role-section"><h3>' + sec.title + '</h3><ul class="role-list">';
+        sec.items.forEach(item => { html += '<li>' + item + '</li>'; });
+        html += '</ul></div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  // ========== Problem Oriented ==========
+  function renderProblemOriented() {
+    const problems = [
+      { q: '如何开始一个新的 VibeCoding 项目？', a: '参考「13-需求分析」进行需求澄清，然后按照「06-AI协作指南」的六阶段框架执行。先完成 P1 需求分析和 P2 原型设计，再进入技术设计和开发。' },
+      { q: '代码文件太大怎么办？', a: '参考「01-开发规范」的代码规范：单文件不超过 300 行，单函数不超过 50 行。按照「04-组件设计」的五步检查流程进行拆分。' },
+      { q: '如何设计数据库表结构？', a: '参考「02-数据库设计」：先识别实体（名词→实体），再识别关系（动词→关系），然后设计字段（必备字段：UUID主键、时间戳、软删除），最后设计索引。' },
+      { q: 'API 接口如何设计？', a: '参考「03-API设计」：遵循 RESTful 规范，使用标准响应结构，实现三层错误处理模型，考虑向前兼容性。' },
+      { q: '如何保证代码质量？', a: '参考「07-测试质量」：遵循测试金字塔（单元70%/集成20%/E2E 10%），使用 AAA 模式编写测试，通过四维度代码审查。' },
+      { q: '性能优化应该从哪里入手？', a: '参考「09-性能缓存」：先关注 Core Web Vitals 指标，再从加载性能（代码拆分、懒加载）、渲染性能（React.memo、虚拟列表）、数据性能（索引优化）三个维度优化。' },
+      { q: '如何处理安全问题？', a: '参考「08-安全设计」：确保 Token 安全管理、输入校验（XSS/SQL注入防护）、HTTPS+CORS 配置、敏感信息保护、Rate Limiting。' },
+      { q: '如何规划项目里程碑？', a: '参考「11-里程碑计划」：使用五步拆分法（识别交付物→分解任务→估算工时→识别依赖→排列顺序），遵循四原则（可交付、可验证、时间盒、渐进式）。' },
+      { q: 'AI 协作时如何避免偏差？', a: '参考「06-AI协作指南」：采用方案先行、上下文提供、范围限制、分步确认的沟通技巧。发现偏差及时澄清，维护 PROJECT_CONTEXT.md。' },
+      { q: '如何进行需求变更管理？', a: '参考「13-需求分析」：遵循变更流程（提出→评估→批准→更新→调整），评估对功能、进度、测试、部署的影响。' }
+    ];
+
+    let html = '<div class="dimension-header"><h1>❓ 问题导向</h1><p>常见问题与解答</p></div>';
+    html += '<div class="problem-list">';
+    problems.forEach((p, i) => {
+      html += '<div class="problem-item" data-problem="' + i + '">' +
+        '<div class="problem-q">' + p.q + '</div>' +
+        '<div class="problem-a">' + p.a + '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ========== Decision Tree ==========
+  function renderDecisionTree() {
+    const decisions = [
+      {
+        q: '选择什么数据库？',
+        options: ['关系型数据为主', '文档型数据为主', '缓存/会话存储'],
+        results: [
+          '推荐 PostgreSQL — 支持 JSONB、全文搜索、丰富的数据类型，适合大多数场景。参考「02-数据库设计」。',
+          '推荐 MongoDB — 适合 schema 灵活变化的场景，但需要注意数据一致性。参考「02-数据库设计」的字段设计。',
+          '推荐 Redis — 用于缓存、会话、实时数据。参考「09-性能缓存」的缓存分层设计。'
+        ]
+      },
+      {
+        q: '组件如何拆分？',
+        options: ['UI 重复出现', '逻辑复杂度高', '组件太大'],
+        results: [
+          '提取为独立组件 — 参考「04-组件设计」的原子设计方法论，按 Atom → Molecule → Organism 层级提取。',
+          '提取自定义 Hook — 参考「04-组件设计」的复用策略，将状态逻辑提取到 useXxx Hook 中。',
+          '拆分为子组件 — 参考「01-开发规范」的单一职责原则，按功能边界拆分。'
+        ]
+      },
+      {
+        q: '如何选择部署方案？',
+        options: ['全栈应用', '纯前端应用', '事件驱动/定时任务'],
+        results: [
+          '推荐 Docker 部署 — 参考「10-部署管理」的 Dockerfile 规范和多阶段构建。',
+          '推荐 Vercel/Netlify — 零配置部署，自动 HTTPS，CDN 加速。参考「10-部署管理」。',
+          '推荐 Serverless — 自动扩缩，按需付费，但注意冷启动延迟。参考「10-部署管理」。'
+        ]
+      },
+      {
+        q: '测试策略如何选择？',
+        options: ['核心业务逻辑', 'UI 组件', '端到端流程'],
+        results: [
+          '写单元测试 — 占比 70%，使用 AAA 模式。参考「07-测试质量」的测试金字塔。',
+          '写集成测试 — 占比 20%，使用 Testing Library。参考「07-测试质量」的三层验收体系。',
+          '写 E2E 测试 — 占比 10%，只覆盖核心流程。参考「07-测试质量」的测试金字塔。'
+        ]
+      }
+    ];
+
+    let html = '<div class="dimension-header"><h1>🌳 决策树</h1><p>常见技术决策指南</p></div>';
+    html += '<div class="decision-tree">';
+    decisions.forEach((d, di) => {
+      html += '<div class="decision-node"><div class="decision-q">' + d.q + '</div><div class="decision-options">';
+      d.options.forEach((opt, oi) => {
+        html += '<div class="decision-opt" data-decision="' + di + '" data-option="' + oi + '">' + opt + '</div>';
+      });
+      html += '</div>';
+      d.results.forEach((r, ri) => {
+        html += '<div class="decision-result" data-decision-result="' + di + '" data-option-result="' + ri + '">' + r + '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ========== Checklist ==========
+  function renderChecklist() {
+    const doc = docsData['12'];
+    if (!doc) return '<p>清单数据未找到</p>';
+    return '<div class="dimension-header"><h1>✅ 检查清单</h1><p>基于「12-健康检查清单」的交互式检查</p></div>' +
+      '<div class="checklist-container">' + marked.parse(doc.content) + '</div>';
+  }
+
+  // ========== Quick Reference ==========
+  function renderQuickRef() {
+    const refs = [
+      { title: '文件命名', content: '文件: <code>kebab-case</code> | 组件: <code>PascalCase</code> | 函数: <code>camelCase</code> | 常量: <code>UPPER_SNAKE</code>' },
+      { title: '文件大小限制', content: '文件 ≤ <code>300行</code> | 函数 ≤ <code>50行</code> | 组件Props ≤ <code>8个</code>' },
+      { title: 'API URL 设计', content: '名词复数 <code>/users</code> | 连字符 <code>/user-profiles</code> | 嵌套 ≤ 3层' },
+      { title: '数据库必备字段', content: '<code>id UUID</code> | <code>created_at</code> | <code>updated_at</code> | <code>deleted_at</code>（软删除）' },
+      { title: '测试比例', content: '单元测试 <code>70%</code> | 集成测试 <code>20%</code> | E2E <code>10%</code>' },
+      { title: '性能目标', content: 'FCP <code>< 1.8s</code> | LCP <code>< 2.5s</code> | TTI <code>< 3.8s</code> | CLS <code>< 0.1</code>' },
+      { title: '错误处理', content: '函数层捕获 → 中间件层格式化 → 全局层兜底记录' },
+      { title: '缓存策略', content: 'Cache-First(静态) | Network-First(API) | Stale-While-Revalidate(列表)' },
+      { title: '安全检查', content: '输入验证 | SQL参数化 | HTTPS | CORS | Rate Limiting | 敏感信息保护' },
+      { title: 'Git 分支', content: '<code>main</code>(生产) → <code>develop</code>(开发) → <code>feature/xxx</code>(功能)' },
+      { title: 'Commit 规范', content: '<code>feat:</code> 新功能 | <code>fix:</code> 修复 | <code>refactor:</code> 重构 | <code>docs:</code> 文档' },
+      { title: '版本号 Semver', content: 'MAJOR(不兼容) | MINOR(新功能) | PATCH(bug修复)' }
+    ];
+
+    let html = '<div class="dimension-header"><h1>⚡ 速查手册</h1><p>常用规范与指标速查</p></div>';
+    html += '<div class="qr-grid">';
+    refs.forEach(ref => {
+      html += '<div class="qr-card"><div class="qr-card-title">' + ref.title + '</div><div class="qr-card-content">' + ref.content + '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ========== Post-Render ==========
+  function postRender() {
+    // Copy buttons for code blocks
+    mainContent.querySelectorAll('pre').forEach(pre => {
+      if (pre.querySelector('.copy-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = '复制';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const code = pre.querySelector('code');
+        const text = code ? code.textContent : pre.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = '已复制 ✓';
+          setTimeout(() => { btn.textContent = '复制'; }, 2000);
+        });
+      });
+      pre.appendChild(btn);
+    });
+
+    // Problem items toggle
+    mainContent.querySelectorAll('.problem-item').forEach(item => {
+      item.addEventListener('click', () => {
+        item.classList.toggle('open');
+      });
+    });
+
+    // Decision tree options
+    mainContent.querySelectorAll('.decision-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const di = opt.getAttribute('data-decision');
+        const oi = opt.getAttribute('data-option');
+        // Remove other selections in same decision
+        opt.parentElement.querySelectorAll('.decision-opt').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        // Show result
+        opt.closest('.decision-node').querySelectorAll('.decision-result').forEach(r => r.classList.remove('show'));
+        const result = opt.closest('.decision-node').querySelector('[data-decision-result="' + di + '"][data-option-result="' + oi + '"]');
+        if (result) result.classList.add('show');
+      });
+    });
+
+    // Role tabs
+    mainContent.querySelectorAll('.role-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const roleIdx = tab.getAttribute('data-role');
+        mainContent.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+        mainContent.querySelectorAll('.role-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const content = mainContent.querySelector('[data-role-content="' + roleIdx + '"]');
+        if (content) content.classList.add('active');
+      });
+    });
+
+    // Checkbox persistence for checklists
+    mainContent.querySelectorAll('.checklist-item input[type="checkbox"]').forEach((cb, i) => {
+      const key = 'vcp-check-' + currentDocId + '-' + i;
+      cb.checked = localStorage.getItem(key) === 'true';
+      cb.addEventListener('change', () => {
+        localStorage.setItem(key, cb.checked);
+      });
+    });
+  }
+
+  // ========== Search ==========
+  let searchTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(performSearch, 300);
+  });
+
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim()) performSearch();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box')) {
+      searchResults.classList.remove('active');
+    }
+  });
+
+  function performSearch() {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+      searchResults.classList.remove('active');
+      return;
+    }
+
+    const results = [];
+    Object.keys(docsData).forEach(key => {
+      const doc = docsData[key];
+      const contentLower = doc.content.toLowerCase();
+      const titleLower = doc.title.toLowerCase();
+      let idx = contentLower.indexOf(query);
+      if (idx === -1 && titleLower.indexOf(query) === -1) return;
+
+      // Find snippet
+      let snippet = '';
+      if (idx !== -1) {
+        const start = Math.max(0, idx - 40);
+        const end = Math.min(doc.content.length, idx + query.length + 60);
+        snippet = (start > 0 ? '...' : '') + doc.content.substring(start, end) + (end < doc.content.length ? '...' : '');
+      } else {
+        snippet = doc.content.substring(0, 100) + '...';
+      }
+
+      // Highlight
+      const regex = new RegExp('(' + escapeRegex(query) + ')', 'gi');
+      snippet = snippet.replace(regex, '<mark>$1</mark>');
+
+      results.push({ key, title: doc.title, snippet });
+    });
+
+    if (results.length === 0) {
+      searchResults.innerHTML = '<div class="search-result-item"><div class="search-result-title">未找到匹配结果</div></div>';
+    } else {
+      searchResults.innerHTML = results.slice(0, 10).map(r =>
+        '<div class="search-result-item" data-search-key="' + r.key + '">' +
+        '<div class="search-result-title">' + r.title + '</div>' +
+        '<div class="search-result-snippet">' + r.snippet + '</div></div>'
+      ).join('');
+    }
+    searchResults.classList.add('active');
+
+    // Click handler for results
+    searchResults.querySelectorAll('.search-result-item[data-search-key]').forEach(item => {
+      item.addEventListener('click', () => {
+        const key = item.getAttribute('data-search-key');
+        currentDimension = 'full-docs';
+        currentDocId = 'doc-' + key;
+        renderSidebarTabs();
+        renderSidebarNav();
+        renderContent();
+        searchResults.classList.remove('active');
+        searchInput.value = '';
+        // Collapse sidebar on mobile
+        if (window.innerWidth <= 768) sidebar.classList.add('collapsed');
+      });
+    });
+  }
+
+  function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // ========== Progress Bar ==========
+  function updateProgress() {
+    requestAnimationFrame(() => {
+      const el = mainContent;
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight - el.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      progressBar.style.width = progress + '%';
+    });
+  }
+  mainContent.addEventListener('scroll', updateProgress);
+
+  // ========== Global Nav ==========
+  window.__nav = function(docId) {
+    if (docId.startsWith('doc-')) {
+      currentDimension = 'full-docs';
+    }
+    currentDocId = docId;
+    renderSidebarTabs();
+    renderSidebarNav();
+    renderContent();
+  };
+
+  // ========== Keyboard Shortcuts ==========
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + K for search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+    // Escape to close search
+    if (e.key === 'Escape') {
+      searchResults.classList.remove('active');
+      searchInput.blur();
+    }
+  });
+
+  // ========== Init ==========
+  renderSidebarTabs();
+  renderSidebarNav();
+  renderContent();
+
+})();
+</script>
+</body>
+</html>
